@@ -1,7 +1,6 @@
 import os
 import re
 import subprocess
-from typing import Any, Callable
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -11,6 +10,8 @@ from telegram.ext import (
     Filters,
     MessageHandler,
     Updater,
+    TypeHandler,
+    DispatcherHandlerStop,
 )
 
 
@@ -49,27 +50,18 @@ def run_command(command: str) -> str:
     return output.decode()
 
 
-def restricted(func: Callable) -> Callable:
-    def wrapped(
-        update: Update, context: CallbackContext, *args: Any, **kwargs: Any
-    ) -> Any:
-        if update.message:
-            username = update.message.chat.username
-        elif update.callback_query and update.callback_query.message:
-            username = update.callback_query.message.chat.username
-        admin_list = admin.split(",")
-        if username in admin_list:
-            return func(update, context, *args, **kwargs)
-        else:
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="You are not authorized to use this bot.",
-            )
-
-    return wrapped
+def pre_update(update: Update, context: CallbackContext) -> None:
+    user_id = update.effective_user.id
+    admin_list = admin.split(",")
+    
+    if user_id not in admin_list:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="You are not authorized to use this bot.",
+        )
+        raise DispatcherHandlerStop
 
 
-@restricted
 def start(update: Update, context: CallbackContext) -> None:
     commands_text = "Reality-EZPZ User Management Bot\n\nChoose an option:"
     keyboard = [
@@ -85,7 +77,6 @@ def start(update: Update, context: CallbackContext) -> None:
     )
 
 
-@restricted
 def users_list(
     update: Update, context: CallbackContext, text: str, callback: str
 ) -> None:
@@ -101,7 +92,6 @@ def users_list(
     )
 
 
-@restricted
 def show_user(update: Update, context: CallbackContext, username: str) -> None:
     text = get_config_ezpz(username)
     keyboard = []
@@ -115,7 +105,6 @@ def show_user(update: Update, context: CallbackContext, username: str) -> None:
     )
 
 
-@restricted
 def delete_user(
     update: Update, context: CallbackContext, username: str
 ) -> None:
@@ -151,7 +140,6 @@ def delete_user(
     )
 
 
-@restricted
 def add_user(update: Update, context: CallbackContext) -> None:
     text = "Enter the username:"
     keyboard = []
@@ -163,7 +151,6 @@ def add_user(update: Update, context: CallbackContext) -> None:
     )
 
 
-@restricted
 def approve_delete(
     update: Update, context: CallbackContext, username: str
 ) -> None:
@@ -177,14 +164,12 @@ def approve_delete(
     )
 
 
-@restricted
 def cancel(update: Update, context: CallbackContext) -> None:
     if "expected_input" in context.user_data:
         del context.user_data["expected_input"]
     start(update, context)
 
 
-@restricted
 def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
@@ -218,7 +203,6 @@ def button(update: Update, context: CallbackContext) -> None:
             approve_delete(update, context, response[1])
 
 
-@restricted
 def user_input(update: Update, context: CallbackContext) -> None:
     if "expected_input" in context.user_data:
         expected_input = context.user_data["expected_input"]
@@ -243,14 +227,18 @@ def user_input(update: Update, context: CallbackContext) -> None:
 
 
 token = os.environ["BOT_TOKEN"]
-admin = os.environ["BOT_ADMIN"]
+admin = os.environ["BOT_ADMIN_ID"]
 
 username_regex = re.compile("^[a-zA-Z0-9]+$")
+
+update_handler = TypeHandler(Update, pre_update)
 
 start_handler = CommandHandler("start", start)
 button_handler = CallbackQueryHandler(button)
 
 updater = Updater(token)
+
+updater.dispatcher.add_handler(update_handler, -1)
 updater.dispatcher.add_handler(start_handler)
 updater.dispatcher.add_handler(button_handler)
 updater.dispatcher.add_handler(
