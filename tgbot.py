@@ -232,7 +232,7 @@ def user_input(update: Update, context: CallbackContext) -> None:
 
 
 logging.basicConfig(
-    "%(asctime)s | %(levelname)s | "
+    format="%(asctime)s | %(levelname)s | "
     "%(name)s::%(funcName)s (line %(lineno)s) | %(message)s",
     level=logging.INFO,
 )
