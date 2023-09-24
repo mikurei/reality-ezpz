@@ -851,7 +851,7 @@ EOF
 }
 
 function download_tgbot_script {
-  curl -fsSL https://raw.githubusercontent.com/aleskxyz/reality-ezpz/master/tgbot.py -o "${path[tgbot_script]}"
+  curl -fsSL https://raw.githubusercontent.com/mikurei/reality-ezpz/master/tgbot.py -o "${path[tgbot_script]}"
 }
 
 function generate_selfsigned_certificate {
