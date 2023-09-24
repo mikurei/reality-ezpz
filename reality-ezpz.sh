@@ -846,7 +846,7 @@ FROM ${image[python]}
 WORKDIR /opt/reality-ezpz/tgbot
 RUN apk add --no-cache docker-cli-compose curl bash newt libqrencode sudo openssl jq
 RUN pip install --no-cache-dir python-telegram-bot==13.5
-CMD [ "python", "./tgbot.py" ]
+CMD [ "python", "-u", "./tgbot.py" ]
 EOF
 }
 

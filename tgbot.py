@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -14,6 +15,7 @@ from telegram.ext import (
     DispatcherHandlerStop,
 )
 
+logger = logging.getLogger(__name__)
 
 SCRIPT = "bash <(curl -sL https://raw.githubusercontent.com/mikurei/reality-ezpz/master/reality-ezpz.sh) "
 
@@ -41,11 +43,13 @@ def add_user_ezpz(username: str) -> None:
 
 
 def run_command(command: str) -> str:
+
     process = subprocess.Popen(
         ["/bin/bash", "-c", command],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+    logger.info(f"executed shell command: '{command}'")
     output, _ = process.communicate()
     return output.decode()
 
@@ -53,7 +57,8 @@ def run_command(command: str) -> str:
 def pre_update(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
     admin_list = admin.split(",")
-    
+
+    logger.info(f"update from {update.effective_user}")
     if user_id not in admin_list:
         context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -226,10 +231,19 @@ def user_input(update: Update, context: CallbackContext) -> None:
             show_user(update, context, username)
 
 
+logging.basicConfig(
+    "%(asctime)s | %(levelname)s | "
+    "%(name)s::%(funcName)s (line %(lineno)s) | %(message)s",
+    level=logging.INFO,
+)
+
 token = os.environ["BOT_TOKEN"]
 admin = os.environ["BOT_ADMIN_ID"]
 
 username_regex = re.compile("^[a-zA-Z0-9]+$")
+
+logger.info("Starting the bot...")
+logger.info(f"Admin list: [{admin}]")
 
 update_handler = TypeHandler(Update, pre_update)
 
