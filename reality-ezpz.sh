@@ -122,7 +122,7 @@ function show_help {
   echo "  -m  --menu                Show menu"
   echo "      --enable-tgbot <true|false> Enable Telegram bot for user management"
   echo "      --tgbot-token <token> Token of Telegram bot"
-  echo "      --tgbot-admins <telegram-username> Usernames of telegram bot admins (Comma separated list of usernames without leading '@')"
+  echo "      --tgbot-admins <telegram-id> User IDs of telegram bot admins (Comma separated list of ids)"
   echo "      --show-server-config  Print server configuration"
   echo "      --add-user <username> Add new user"
   echo "      --list-users          List all users"
@@ -283,7 +283,7 @@ function parse_args {
       --tgbot-admins)
         args[tgbot_admins]="$2"
         if [[ ! ${args[tgbot_admins]} =~ ${regex[tgbot_admins]} || $tgbot_admins =~ .+_$ || $tgbot_admins =~ .+_,.+ ]]; then
-          echo "Invalid Telegram Bot Admins Username: ${args[tgbot_admins]}\nThe usernames must separated by ',' without leading '@' character or any extra space."
+          echo "Invalid Telegram Bot Admin IDs: ${args[tgbot_admins]}\nThe IDs must separated by ',' without leading '@' character or any extra space."
          return 1
         fi
         shift 2
@@ -450,7 +450,7 @@ function build_config {
     exit 1
   fi
   if [[ ${config[tgbot]} == 'ON' && -z ${config[tgbot_admins]} ]]; then
-    echo 'To enable Telegram bot, you have to give the list of authorized Telegram admins username with --tgbot-admins option.'
+    echo 'To enable Telegram bot, you have to give the list of authorized Telegram admin IDs with --tgbot-admins option.'
     exit 1
   fi
   if [[ ${config[warp]} == 'ON' && -z ${config[warp_license]} ]]; then
@@ -697,7 +697,7 @@ services:
     restart: always
     environment:
       BOT_TOKEN: ${config[tgbot_token]}
-      BOT_ADMIN: ${config[tgbot_admins]}
+      BOT_ADMIN_ID: ${config[tgbot_admins]}
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - ../:/opt/reality-ezpz
@@ -1971,13 +1971,13 @@ function config_tgbot_menu {
       config[tgbot_token]=$tgbot_token
       while true; do
         tgbot_admins=$(whiptail --clear --backtitle "$BACKTITLE" --title "Telegram Bot Admins" \
-          --inputbox "Enter Telegram Bot Admins (Seperate multiple admins by comma ',' without leading '@'):" $HEIGHT $WIDTH "${config[tgbot_admins]}" \
+          --inputbox "Enter Telegram Bot Admin IDs (Seperate multiple admins by comma ','):" $HEIGHT $WIDTH "${config[tgbot_admins]}" \
           3>&1 1>&2 2>&3)
         if [[ $? -ne 0 ]]; then
           break
         fi
         if [[ ! $tgbot_admins =~ ${regex[tgbot_admins]} || $tgbot_admins =~ .+_$ || $tgbot_admins =~ .+_,.+ ]]; then
-          message_box "Invalid Input" "Invalid Username\nThe usernames must separated by ',' without leading '@' character or any extra space."
+          message_box "Invalid Input" "Invalid ID\nThe IDs must separated by ','"
           continue
         fi
         config[tgbot_admins]=$tgbot_admins
