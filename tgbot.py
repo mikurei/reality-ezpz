@@ -1,37 +1,37 @@
 import os
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, ConversationHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, ConversationHandler, CallbackContext
 import re
 import subprocess
+from typing import Callable, Any
 
 token = os.environ['BOT_TOKEN']
 admin = os.environ['BOT_ADMIN']
 updater = Updater(token)
 username_regex = re.compile("^[a-zA-Z0-9]+$")
 command = 'bash <(curl -sL https://raw.githubusercontent.com/mikurei/reality-ezpz/master/reality-ezpz.sh) '
-def get_users_ezpz():
+def get_users_ezpz() -> str:
   local_command = command + '--list-users'
   return run_command(local_command).split('\n')[:-1]
-def get_config_ezpz(username):
+def get_config_ezpz(username: str) -> str:
   local_command = command + f'--show-user {username} | grep ://'
   return run_command(local_command)
-def delete_user_ezpz(username):
+def delete_user_ezpz(username: str) -> None:
   local_command = command + f'--delete-user {username}'
   run_command(local_command)
   return
-def add_user_ezpz(username):
+def add_user_ezpz(username: str) -> None:
   local_command = command + f'--add-user {username}'
   run_command(local_command)
   return
 
-def run_command(command):
+def run_command(command: str) -> str:
   process = subprocess.Popen(['/bin/bash', '-c', command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   output, _ = process.communicate()
   return output.decode()
 
-def restricted(func):
-  def wrapped(update, context, *args, **kwargs):
-    username = None
+def restricted(func: Callable) -> Callable:
+  def wrapped(update: Update, context: CallbackContext, *args: Any, **kwargs: Any) -> Any:
     if update.message:
       username = update.message.chat.username
     elif update.callback_query and update.callback_query.message:
@@ -44,7 +44,7 @@ def restricted(func):
   return wrapped
 
 @restricted
-def start(update, context):
+def start(update: Update, context: CallbackContext) -> None:
   commands_text = "Reality-EZPZ User Management Bot\n\nChoose an option:"
   keyboard = [
     [InlineKeyboardButton('Show User', callback_data='show_user')],
@@ -55,7 +55,7 @@ def start(update, context):
   context.bot.send_message(chat_id=update.effective_chat.id, text=commands_text, reply_markup=reply_markup)
 
 @restricted
-def users_list(update, context, text, callback):
+def users_list(update: Update, context: CallbackContext, text: str, callback: str) -> None:
   keyboard = []
   for user in get_users_ezpz():
     keyboard.append([InlineKeyboardButton(user, callback_data=f'{callback}!{user}')])
@@ -64,7 +64,7 @@ def users_list(update, context, text, callback):
   context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 @restricted
-def show_user(update, context, username):
+def show_user(update: Update, context: CallbackContext, username: str) -> None:
   text = get_config_ezpz(username)
   keyboard = []
   keyboard.append([InlineKeyboardButton('Back', callback_data='show_user')])
@@ -73,7 +73,7 @@ def show_user(update, context, username):
   context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 @restricted
-def delete_user(update, context, username):
+def delete_user(update: Update, context: CallbackContext, username: str) -> None:
   keyboard = []
   if len(get_users_ezpz()) == 1:
     text = 'You cannot delete the only user.\nAt least one user is needed.\nCreate a new user, then delete this one.'
@@ -88,7 +88,7 @@ def delete_user(update, context, username):
   context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 @restricted
-def add_user(update, context):
+def add_user(update: Update, context: CallbackContext) -> None:
   text = 'Enter the username:'
   keyboard = []
   keyboard.append([InlineKeyboardButton('Cancel', callback_data='cancel')])
@@ -97,7 +97,7 @@ def add_user(update, context):
   context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 @restricted
-def approve_delete(update, context, username):
+def approve_delete(update: Update, context: CallbackContext, username: str) -> None:
   delete_user_ezpz(username)
   text = f'User {username} has been deleted.'
   keyboard = []
@@ -106,13 +106,13 @@ def approve_delete(update, context, username):
   context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 @restricted
-def cancel(update, context):
+def cancel(update: Update, context: CallbackContext) -> None:
   if 'expected_input' in context.user_data:
     del context.user_data['expected_input']
   start(update, context)
 
 @restricted
-def button(update, context):
+def button(update: Update, context: CallbackContext) -> None:
   query = update.callback_query
   query.answer()
   response = query.data.split('!')
@@ -138,7 +138,7 @@ def button(update, context):
       approve_delete(update, context, response[1])
 
 @restricted
-def user_input(update, context):
+def user_input(update: Update, context: CallbackContext) -> None:
   if 'expected_input' in context.user_data:
     expected_input = context.user_data['expected_input']
     del context.user_data['expected_input']
