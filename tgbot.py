@@ -43,7 +43,6 @@ def add_user_ezpz(username: str) -> None:
 
 
 def run_command(command: str) -> str:
-
     process = subprocess.Popen(
         ["/bin/bash", "-c", command],
         stdout=subprocess.PIPE,
@@ -55,7 +54,7 @@ def run_command(command: str) -> str:
 
 
 def pre_update(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
+    user_id = str(update.effective_user.id)
     admin_list = admin.split(",")
 
     logger.info(f"update from {update.effective_user}")
@@ -232,7 +231,7 @@ def user_input(update: Update, context: CallbackContext) -> None:
 
 
 logging.basicConfig(
-    format="%(asctime)s | %(levelname)s | "
+    "%(asctime)s | %(levelname)s | "
     "%(name)s::%(funcName)s (line %(lineno)s) | %(message)s",
     level=logging.INFO,
 )
